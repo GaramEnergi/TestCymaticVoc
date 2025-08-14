@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VoxCymatic — Prototip HTML</title>
+  <style>
+    :root{--bg:#0b1020;--card:#121932;--ink:#eaf0ff;--muted:#9db0ff;--accent:#7aa2ff;--ok:#18c37d;--warn:#ffd166;--bad:#ff6b6b}
+    html,body{height:100%;}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:linear-gradient(160deg,#060a18,#111a35 40%,#0c193e);color:var(--ink)}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    .card{background:var(--card);border:1px solid #22305f;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:18px}
+    h1{font-size:clamp(24px,3.5vw,34px);margin:0 0 6px}
+    p.lead{color:var(--muted);margin-top:0}
+    .grid{display:grid;gap:16px}
+    @media(min-width:920px){.grid{grid-template-columns:1.2fr .8fr}}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+    button{background:#1a2454;border:1px solid #2a3a7a;color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600}
+    button:hover{filter:brightness(1.1)}
+    button[disabled]{opacity:.5;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#0f1533;border:1px solid #233066;color:#bcd0ff;padding:6px 10px;border-radius:999px;font-size:12px}
+    .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .meter{height:12px;background:#0e1431;border:1px solid #26346e;border-radius:999px;overflow:hidden}
+    .meter>i{display:block;height:100%;background:linear-gradient(90deg,#6fa8ff,#97ffda);width:0}
+    canvas{width:100%;height:160px;background:#0a0f26;border:1px solid #22305f;border-radius:12px}
+    .cols{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+    .score{background:#0e1534;border:1px solid #233066;padding:12px;border-radius:12px}
+    .score h4{margin:0 0 6px;font-size:14px;color:#cfe0ff}
+    .score .val{font-size:28px;font-weight:800}
+    .badge{padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700}
+    .ok{background:#0e2b22;color:#98ffd4;border:1px solid #1c5e4a}
+    .warn{background:#2a240b;color:#ffe6a3;border:1px solid #6b5b1a}
+    .bad{background:#2b1111;color:#ffc9c9;border:1px solid #692525}
+    .muted{color:#a9b9ff}
+    .foot{font-size:12px;color:#9cb4ff7a}
+    .sectionTitle{margin:14px 0 8px;color:#d9e4ff}
+    .small{font-size:12px;color:#a9b7ff}
+    .right{justify-content:flex-end}
+    .divider{height:1px;background:#233066;margin:10px 0}
+    select{background:#0f1533;color:#eaf0ff;border:1px solid #2a3a7a;border-radius:10px;padding:8px}
+    .inline{display:inline-flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>VoxCymatic — Prototip HTML</h1>
+      <p class="lead">Uji sebutan vokal <strong>AAA / OOO / MMM</strong> selama 8 saat untuk menjana skor kestabilan <em>(kesejahteraan, bukan diagnosis)</em>. Pastikan tempat sunyi.</p>
+
+      <div class="grid">
+        <div>
+          <div class="row">
+            <span class="pill" id="status">Status: Sedia</span>
+            <span class="pill">Kiraan: <b id="count">0</b> s</span>
+          </div>
+
+          <div class="controls">
+            <button id="btnAAA">Rakam “AAA” (8s)</button>
+            <button id="btnOOO">Rakam “OOO” (8s)</button>
+            <button id="btnMMM">Rakam “MMM” (8s)</button>
+            <button id="btnStop" disabled>Henti</button>
+          </div>
+
+          <canvas id="viz" width="900" height="220"></canvas>
+          <div class="meter" aria-label="Kualiti Isyarat">
+            <i id="snrBar"></i>
+          </div>
+          <div class="small">Kualiti rakaman (anggaran SNR)</div>
+
+          <div class="sectionTitle">Audio Pembetulan (Cymatic Preset)</div>
+          <div class="row">
+            <label class="inline">Sasaran
+              <select id="preset">
+                <option value="cardio">Jantung / Tenang (128 Hz)</option>
+                <option value="hepatic">Hati / Detoks (111 Hz)</option>
+                <option value="sinus">Sinus / Tiroid (192 Hz)</option>
+                <option value="ans">Saraf Autonomik (62 Hz)</option>
+              </select>
+            </label>
+            <label class="inline">Tempoh
+              <select id="dur">
+                <option value="420">7 min</option>
+                <option value="660">11 min</option>
+                <option value="900">15 min</option>
+              </select>
+            </label>
+            <button id="playTone">Mainkan</button>
+            <button id="stopTone" disabled>Henti Audio</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="sectionTitle">Skor Kestabilan (0–100)</div>
+          <div class="cols">
+            <div class="score"><h4>Kardiovaskular</h4><div class="val" id="scCardio">—</div><div id="badgeCardio" class="badge">—</div></div>
+            <div class="score"><h4>Hepatik (Hati)</h4><div class="val" id="scHep">—</div><div id="badgeHep" class="badge">—</div></div>
+            <div class="score"><h4>Endokrin / Tiroid</h4><div class="val" id="scEndo">—</div><div id="badgeEndo" class="badge">—</div></div>
+            <div class="score"><h4>Saraf Autonomik</h4><div class="val" id="scAns">—</div><div id="badgeAns" class="badge">—</div></div>
+            <div class="score"><h4>Respiratori / Sinus</h4><div class="val" id="scResp">—</div><div id="badgeResp" class="badge">—</div></div>
+            <div class="score"><h4>Umum / Emosi</h4><div class="val" id="scEmo">—</div><div id="badgeEmo" class="badge">—</div></div>
+          </div>
+          <div class="divider"></div>
+          <p class="foot">Penafian: Alat ini untuk kesejahteraan & pendidikan. Ia <strong>bukan</strong> alat diagnosis perubatan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ======= Audio/Analyser setup =======
+  let ctx, analyser, srcNode, micStream, dataTime, dataFreq, rafId;
+  let recording = false;
+  let targetVowel = null;
+  let chunks = [];
+  let mediaRecorder;
+  const durTarget = 8; // seconds per take
+
+  const el = id => document.getElementById(id);
+  const statusEl = el('status');
+  const countEl = el('count');
+  const snrBar = el('snrBar');
+  const canvas = el('viz');
+  const g = canvas.getContext('2d');
+
+  const btnAAA = el('btnAAA');
+  const btnOOO = el('btnOOO');
+  const btnMMM = el('btnMMM');
+  const btnStop = el('btnStop');
+
+  // Feature buffers per vowel
+  const feats = { AAA: [], OOO: [], MMM: [] };
+
+  function badgeFor(val){
+    const b = document.createElement('span');
+    b.className = 'badge ' + (val>=75? 'ok': val>=50? 'warn':'bad');
+    b.textContent = val>=75? 'Stabil': val>=50? 'Perlu Pantau': 'Tidak Stabil';
+    return b;
+  }
+  function setBadge(id,val){
+    const host = el(id);
+    host.className = 'badge ' + (val>=75? 'ok': val>=50? 'warn':'bad');
+    host.textContent = val>=75? 'Stabil': val>=50? 'Perlu Pantau': 'Tidak Stabil';
+  }
+
+  async function initAudio(){
+    if(ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    srcNode = ctx.createMediaStreamSource(micStream);
+
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.85;
+
+    srcNode.connect(analyser);
+
+    dataTime = new Uint8Array(analyser.fftSize);
+    dataFreq = new Uint8Array(analyser.frequencyBinCount);
+
+    mediaRecorder = new MediaRecorder(micStream);
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = onRecordingStop;
+  }
+
+  function draw(){
+    rafId = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(dataTime);
+    analyser.getByteFrequencyData(dataFreq);
+
+    // waveform
+    g.clearRect(0,0,canvas.width,canvas.height);
+    g.strokeStyle = '#9db0ff';
+    g.lineWidth = 2;
+    g.beginPath();
+    const step = canvas.width / dataTime.length;
+    for(let i=0;i<dataTime.length;i++){
+      const v = (dataTime[i]-128)/128;
+      const y = canvas.height/2 + v*80;
+      const x = i*step;
+      if(i===0) g.moveTo(x,y); else g.lineTo(x,y);
+    }
+    g.stroke();
+
+    // simple SNR bar using RMS
+    const rms = Math.sqrt(dataTime.reduce((s,v)=>{const dv=v-128; return s+dv*dv},0)/dataTime.length)/128;
+    const snr = Math.min(1, Math.max(0, (rms-0.02)/0.18));
+    snrBar.style.width = (snr*100).toFixed(1)+'%';
+  }
+
+  function startVowel(vowel){
+    targetVowel = vowel;
+    chunks = [];
+    recording = true;
+    statusEl.textContent = `Status: Merakam ${vowel}`;
+    btnStop.disabled = false;
+    btnAAA.disabled = btnOOO.disabled = btnMMM.disabled = true;
+    countEl.textContent = '0';
+
+    mediaRecorder.start();
+    let t=0;
+    const tick = () =>{
+      if(!recording) return;
+      t++; countEl.textContent = String(t);
+      if(t>=durTarget){ stopRecording(); return; }
+      setTimeout(tick,1000);
+    };
+    tick();
+  }
+
+  function stopRecording(){
+    if(!recording) return;
+    recording = false;
+    statusEl.textContent = 'Status: Memproses...';
+    btnStop.disabled = true;
+    mediaRecorder.stop();
+  }
+
+  function autocorrPitch(buf, sampleRate){
+    // naive ACF-based pitch detection on time-domain bytes
+    // convert to centered floats
+    const fbuf = Float32Array.from(buf, b=> (b-128)/128);
+    const size = fbuf.length;
+    let bestLag=0,best=0;
+    const minFreq=60, maxFreq=400;
+    const minLag = Math.floor(sampleRate/maxFreq);
+    const maxLag = Math.floor(sampleRate/minFreq);
+    for(let lag=minLag; lag<=maxLag; lag++){
+      let sum=0;
+      for(let i=0;i<size-lag;i++) sum += fbuf[i]*fbuf[i+lag];
+      if(sum>best){best=sum; bestLag=lag}
+    }
+    return bestLag? sampleRate/bestLag : 0;
+  }
+
+  function spectralCentroid(freqBins, sampleRate, fftSize){
+    let num=0,den=0;
+    for(let i=0;i<freqBins.length;i++){
+      const mag = freqBins[i];
+      const f = i*sampleRate/(2*freqBins.length);
+      num += f*mag; den += mag;
+    }
+    return den>0? num/den : 0;
+  }
+
+  function onRecordingStop(){
+    // snapshot features from analyser buffers collected at stop
+    const sr = ctx.sampleRate;
+    analyser.getByteTimeDomainData(dataTime);
+    analyser.getByteFrequencyData(dataFreq);
+
+    const f0 = autocorrPitch(dataTime, sr);
+    const centroid = spectralCentroid(dataFreq, sr, analyser.fftSize);
+    const rms = Math.sqrt(dataTime.reduce((s,v)=>{const dv=v-128; return s+dv*dv},0)/dataTime.length)/128;
+
+    // crude jitter/shimmer proxies via variance of pitch/amp over last frame (single frame -> N/A)
+    // we'll simulate with frequency spread and amplitude
+    const spread = (()=>{
+      let m=0; for(let i=0;i<dataFreq.length;i++) m+=dataFreq[i]; m/=dataFreq.length;
+      let v=0; for(let i=0;i<dataFreq.length;i++) {const d=dataFreq[i]-m; v+=d*d}
+      return Math.sqrt(v/dataFreq.length)/255;
+    })();
+
+    feats[targetVowel].push({f0, centroid, rms, spread});
+
+    statusEl.textContent = 'Status: Selesai rakam ' + targetVowel;
+    btnAAA.disabled = btnOOO.disabled = btnMMM.disabled = false;
+
+    // After we have at least one sample of each, score
+    if(feats.AAA.length && feats.OOO.length && feats.MMM.length){
+      scoreAll();
+    }
+  }
+
+  function avg(arr, key){
+    if(!arr.length) return 0; let s=0; for(const x of arr) s+=x[key]; return s/arr.length;
+  }
+
+  function clamp(v,a,b){return Math.max(a, Math.min(b,v));}
+  function norm(x,x0,x1){return clamp((x-x0)/(x1-x0),0,1)}
+
+  function scoreAll(){
+    // Aggregate features
+    const A = {f0:avg(feats.AAA,'f0'), cen:avg(feats.AAA,'centroid'), rms:avg(feats.AAA,'rms'), sp:avg(feats.AAA,'spread')};
+    const O = {f0:avg(feats.OOO,'f0'), cen:avg(feats.OOO,'centroid'), rms:avg(feats.OOO,'rms'), sp:avg(feats.OOO,'spread')};
+    const M = {f0:avg(feats.MMM,'f0'), cen:avg(feats.MMM,'centroid'), rms:avg(feats.MMM,'rms'), sp:avg(feats.MMM,'spread')};
+
+    // Heuristic mapping (tuned for demonstration). Values 0..100
+    // Cardio: AAA f0 in 85..220 Hz, moderate rms, spread low
+    const cardio = Math.round(100*(0.5* (1-norm(Math.abs(A.f0-150),0,120)) + 0.3*(1-norm(A.sp,0.05,0.25)) + 0.2*(1-norm(Math.abs(A.rms-0.12),0,0.12)) ));
+
+    // Hepatic: OOO centroid 300..800, spread moderate, rms stable
+    const hep = Math.round(100*(0.5*(1-norm(Math.abs(O.cen-550),0,500)) + 0.3*(1-norm(Math.abs(O.rms-0.10),0,0.12)) + 0.2*(1-norm(O.sp,0.08,0.30))));
+
+    // Endocrine/Tiroid: MMM centroid 200..900, f0 stable ~ 120..260
+    const endo = Math.round(100*(0.5*(1-norm(Math.abs(M.cen-500),0,500)) + 0.3*(1-norm(Math.abs(M.f0-180),0,120)) + 0.2*(1-norm(M.sp,0.08,0.35))));
+
+    // ANS (autonomic): tempo/variability proxy with overall spread and rms balance across three
+    const ans = Math.round(100*(1 - norm(Math.abs((A.sp+O.sp+M.sp)/3 - 0.15),0,0.15)));
+
+    // Respiratory/Sinus: MMM energy around nasal bands approximated by centroid lower better
+    const resp = Math.round(100*(1 - norm(Math.abs(M.cen-350),0,400)));
+
+    // Emotional/General: blend of AAA centroid + stability
+    const emo = Math.round(100*(0.6*(1-norm(Math.abs(A.cen-700),0,600)) + 0.4*(1-norm(A.sp,0.06,0.35))));
+
+    const to01 = v => clamp(v,0,100);
+    const S = {
+      cardio: to01(cardio), hep: to01(hep), endo: to01(endo), ans: to01(ans), resp: to01(resp), emo: to01(emo)
+    };
+
+    el('scCardio').textContent = S.cardio; setBadge('badgeCardio',S.cardio);
+    el('scHep').textContent = S.hep; setBadge('badgeHep',S.hep);
+    el('scEndo').textContent = S.endo; setBadge('badgeEndo',S.endo);
+    el('scAns').textContent = S.ans; setBadge('badgeAns',S.ans);
+    el('scResp').textContent = S.resp; setBadge('badgeResp',S.resp);
+    el('scEmo').textContent = S.emo; setBadge('badgeEmo',S.emo);
+
+    statusEl.textContent = 'Status: Laporan dijana';
+  }
+
+  // ======= Tone presets =======
+  let toneOsc, toneGain, toneTimer;
+  const presetMap = {
+    cardio: 128,
+    hepatic: 111,
+    sinus: 192,
+    ans: 62
+  };
+
+  function playTone(){
+    const p = el('preset').value;
+    const seconds = parseInt(el('dur').value,10);
+    if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)();
+    toneOsc?.stop?.(); toneGain?.disconnect?.(); clearTimeout(toneTimer);
+
+    toneOsc = ctx.createOscillator();
+    toneGain = ctx.createGain();
+    const base = presetMap[p] || 128;
+    // gentle binaural/isochronic feel: amplitude pulse ~4.5 Hz
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 4.5; lfoGain.gain.value = 0.35; // depth
+    lfo.connect(lfoGain).connect(toneGain.gain);
+
+    toneOsc.type = 'sine';
+    toneOsc.frequency.value = base;
+    toneGain.gain.value = 0.0001; // fade in
+
+    toneOsc.connect(toneGain).connect(ctx.destination);
+    toneOsc.start(); lfo.start();
+
+    // fade in
+    toneGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 2.0);
+
+    // stop after duration with fade out
+    toneTimer = setTimeout(()=>{
+      toneGain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+      setTimeout(()=>{ try{toneOsc.stop(); lfo.stop();}catch(e){}; el('stopTone').disabled=true; }, 1400);
+    }, seconds*1000);
+
+    el('stopTone').disabled=false;
+  }
+  function stopTone(){
+    try{
+      toneGain?.gain?.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+      setTimeout(()=>{toneOsc?.stop?.();}, 600);
+    }catch(e){}
+    clearTimeout(toneTimer);
+    el('stopTone').disabled=true;
+  }
+
+  // ======= Event bindings =======
+  btnAAA.onclick = async()=>{ await initAudio(); startVowel('AAA'); };
+  btnOOO.onclick = async()=>{ await initAudio(); startVowel('OOO'); };
+  btnMMM.onclick = async()=>{ await initAudio(); startVowel('MMM'); };
+  btnStop.onclick = stopRecording;
+
+  el('playTone').onclick = ()=>{ playTone(); };
+  el('stopTone').onclick = ()=>{ stopTone(); };
+
+  // start visualizer once audio is ready
+  (async()=>{ await initAudio(); draw(); })().catch(()=>{
+    statusEl.textContent = 'Status: Benarkan akses mikrofon untuk mula.';
+  });
+
+  </script>
+</body>
+</html>
